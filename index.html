@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Calculator</title>
+    <style>
+        :root {
+            --primary: #f0f0f0;
+            --secondary: #333;
+            --accent: #FF9500;
+            --accent-light: #ffaa33;
+            --text-dark: #222;
+            --text-light: #fff;
+            --button-hover: #ddd;
+            --display-bg: #f8f8f8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        .calculator {
+            width: 320px;
+            background: var(--primary);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .display {
+            padding: 20px;
+            text-align: right;
+            background: var(--display-bg);
+            position: relative;
+        }
+
+        .history {
+            min-height: 20px;
+            font-size: 1rem;
+            color: var(--secondary);
+            opacity: 0.6;
+        }
+
+        .current {
+            margin-top: 10px;
+            font-size: 2.5rem;
+            font-weight: 300;
+            color: var(--text-dark);
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: var(--secondary);
+        }
+
+        button {
+            border: none;
+            outline: none;
+            padding: 20px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: var(--primary);
+        }
+
+        button:hover {
+            background: var(--button-hover);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .operator {
+            background: var(--accent);
+            color: var(--text-light);
+        }
+
+        .operator:hover {
+            background: var(--accent-light);
+        }
+
+        .span-2 {
+            grid-column: span 2;
+        }
+
+        .equals {
+            background: var(--accent);
+            color: var(--text-light);
+        }
+
+        .equals:hover {
+            background: var(--accent-light);
+        }
+
+        .backspace {
+            font-size: 1.5rem;
+        }
+        
+        .sci {
+            background: #e0e0e0;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 350px) {
+            .calculator {
+                width: 100%;
+                border-radius: 0;
+                height: 100vh;
+            }
+        }
+
+        /* Scrollbar for display when numbers overflow */
+        .current::-webkit-scrollbar {
+            height: 5px;
+        }
+
+        .current::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .current::-webkit-scrollbar-thumb {
+            background: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="display">
+            <div class="history" id="history"></div>
+            <div class="current" id="current">0</div>
+        </div>
+        <div class="buttons">
+            <button class="operator" onclick="clearAll()">AC</button>
+            <button class="operator" onclick="clearEntry()">C</button>
+            <button class="operator" onclick="appendOperator('%')">%</button>
+            <button class="operator" onclick="appendOperator('/')">/</button>
+            
+            <button onclick="appendNumber('7')">7</button>
+            <button onclick="appendNumber('8')">8</button>
+            <button onclick="appendNumber('9')">9</button>
+            <button class="operator" onclick="appendOperator('*')">×</button>
+            
+            <button onclick="appendNumber('4')">4</button>
+            <button onclick="appendNumber('5')">5</button>
+            <button onclick="appendNumber('6')">6</button>
+            <button class="operator" onclick="appendOperator('-')">−</button>
+            
+            <button onclick="appendNumber('1')">1</button>
+            <button onclick="appendNumber('2')">2</button>
+            <button onclick="appendNumber('3')">3</button>
+            <button class="operator" onclick="appendOperator('+')">+</button>
+            
+            <button onclick="toggleSign()">+/-</button>
+            <button onclick="backspace()">⌫</button>
+            <button onclick="appendNumber('0')">0</button>
+            <button onclick="appendNumber('.')">.</button>
+            <button class="equals" onclick="calculate()">=</button>
+        <button class="sci" onclick="squareRoot()">√</button>
+            <button class="sci" onclick="power()">x^y</button>
+            <button class="sci" onclick="sin()">sin</button>
+            <button class="sci" onclick="cos()">cos</button>
+        </div>
+    </div>
+
+    <script>
+        let currentOperand = '0';
+        let previousOperand = '';
+        let operation = undefined;
+        let resetScreen = false;
+
+        const currentDisplay = document.getElementById('current');
+        const historyDisplay = document.getElementById('history');
+
+        function updateDisplay() {
+            currentDisplay.textContent = currentOperand;
+            if (operation != null) {
+                historyDisplay.textContent = `${previousOperand} ${operation}`;
+            } else {
+                historyDisplay.textContent = '';
+            }
+        }
+
+        function appendNumber(number) {
+            if (currentOperand === '0' || resetScreen) {
+                currentOperand = '';
+                resetScreen = false;
+            }
+            if (number === '.' && currentOperand.includes('.')) return;
+            currentOperand += number;
+            updateDisplay();
+        }
+
+        function appendOperator(operator) {
+            if (currentOperand === '') return;
+            if (previousOperand !== '') {
+                calculate();
+            }
+            operation = operator;
+            previousOperand = currentOperand;
+            currentOperand = '';
+            updateDisplay();
+        }
+
+        function calculate() {
+            let computation;
+            const prev = parseFloat(previousOperand);
+            const current = parseFloat(currentOperand);
+            if (isNaN(prev) || isNaN(current)) return;
+            
+            switch (operation) {
+                case '+':
+                    computation = prev + current;
+                    break;
+                case '-':
+                    computation = prev - current;
+                    break;
+                case '*':
+                    computation = prev * current;
+                    break;
+                case '/':
+                    computation = prev / current;
+                    break;
+                case '%':
+                    computation = prev % current;
+                    break;
+                case '^':
+                    computation = Math.pow(prev, current);
+                    break;
+                default:
+                    return;
+            }
+            
+            currentOperand = computation.toString();
+            operation = undefined;
+            previousOperand = '';
+            resetScreen = true;
+            updateDisplay();
+        }
+
+        function clearAll() {
+            currentOperand = '0';
+            previousOperand = '';
+            operation = undefined;
+            updateDisplay();
+        }
+
+        function clearEntry() {
+            currentOperand = '0';
+            updateDisplay();
+        }
+
+        function backspace() {
+            if (currentOperand.length > 1) {
+                currentOperand = currentOperand.slice(0, -1);
+            } else {
+                currentOperand = '0';
+            }
+            updateDisplay();
+        }
+
+        function squareRoot() {
+            const num = parseFloat(currentOperand);
+            if (isNaN(num) || num < 0) return;
+            currentOperand = Math.sqrt(num).toString();
+            updateDisplay();
+        }
+
+        function power() {
+            if (currentOperand === '') return;
+            operation = '^';
+            previousOperand = currentOperand;
+            currentOperand = '';
+            updateDisplay();
+        }
+
+        function toggleSign() {
+            currentOperand = (parseFloat(currentOperand) * -1).toString();
+            updateDisplay();
+        }
+
+        function sin() {
+            const num = parseFloat(currentOperand);
+            currentOperand = Math.sin(num * Math.PI / 180).toString();
+            updateDisplay();
+        }
+
+        function cos() {
+            const num = parseFloat(currentOperand);
+            currentOperand = Math.cos(num * Math.PI / 180).toString();
+            updateDisplay();
+        }
+
+        function tan() {
+            const num = parseFloat(currentOperand);
+            currentOperand = Math.tan(num * Math.PI / 180).toString();
+            updateDisplay();
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', (e) => {
+            if (e.key >= '0' && e.key <= '9') appendNumber(e.key);
+            else if (e.key === '.') appendNumber('.');
+            else if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/' || e.key === '%') 
+                appendOperator(e.key);
+            else if (e.key === 'Enter' || e.key === '=') calculate();
+            else if (e.key === 'Escape') clearAll();
+            else if (e.key === 'Backspace') backspace();
+            else if (e.key === '^') power();
+        });
+    </script>
+</body>
+</html>
+
