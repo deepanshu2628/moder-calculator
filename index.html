@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modern Calculator</title>
     <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon-192.png" />
+    <meta name="theme-color" content="#FF9500">
 
     <style>
         :root {
@@ -180,11 +182,53 @@
             <button class="sci" onclick="cos()">cos</button>
         </div>
              <script>
-                 if ("serviceWorker" in navigator) {
-                 navigator.serviceWorker
-                .register("service-worker.js")
-                .then(() => console.log("Service Worker Registered"));
+                
+  // Register Service Worker
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js")
+      .then(() => console.log("✅ Service Worker Registered"))
+      .catch((err) => console.log("❌ Service Worker Failed", err));
   }
+
+  // PWA Install Prompt
+  let deferredPrompt;
+  const installBtn = document.createElement('button');
+  installBtn.textContent = "📲 Install Calculator";
+  installBtn.style.position = 'fixed';
+  installBtn.style.bottom = '20px';
+  installBtn.style.right = '20px';
+  installBtn.style.padding = '10px 20px';
+  installBtn.style.background = '#FF9500';
+  installBtn.style.color = '#fff';
+  installBtn.style.border = 'none';
+  installBtn.style.borderRadius = '10px';
+  installBtn.style.cursor = 'pointer';
+  installBtn.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+  installBtn.style.zIndex = '9999';
+  installBtn.style.display = 'none';
+  document.body.appendChild(installBtn);
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = 'block';
+  });
+
+  installBtn.addEventListener('click', () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the A2HS prompt');
+        }
+        deferredPrompt = null;
+        installBtn.style.display = 'none';
+      });
+    }
+  });
+</script>
+
+  
 </script>
 
     </div>
